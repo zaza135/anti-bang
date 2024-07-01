@@ -1,0 +1,53 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+
+local pushEnabled = false
+local pushDistance = 5
+local pushForce = 50
+
+local function onCharacterAdded(character)
+    RootPart = character:WaitForChild("HumanoidRootPart")
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+local function pushAwayFromPlayer(otherPlayer)
+    local otherRootPart = otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if otherRootPart then
+        local direction = (RootPart.Position - otherRootPart.Position).unit
+        RootPart.Velocity = direction * pushForce
+    end
+end
+
+local function checkProximity()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (RootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            if distance < pushDistance then
+                pushAwayFromPlayer(player)
+            end
+        end
+    end
+end
+
+local function togglePush()
+    pushEnabled = not pushEnabled
+    if pushEnabled then
+        pushConnection = RunService.RenderStepped:Connect(checkProximity)
+    else
+        if pushConnection then
+            pushConnection:Disconnect()
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.X then
+        togglePush()
+    end
+end)
